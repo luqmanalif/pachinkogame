@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pachinko Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #eee;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .game-container {
+            flex: 3;
+            position: relative;
+            background-color: #1a1a1a;
+            overflow: hidden;
+        }
+        
+        .ui-container {
+            flex: 1;
+            padding: 20px;
+            background-color: #222;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 250px;
+            max-width: 300px;
+        }
+        
+        .game-board {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        .pin {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background-color: #aaa;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .ball {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background-color: #ff9800;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+        
+        .section {
+            position: absolute;
+            bottom: 0;
+            height: 60px;
+            background-color: #333;
+            border: 1px solid #444;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .custom-rail {
+            position: absolute;
+            background-color: #4fc3f7;
+            height: 5px;
+            transform-origin: left center;
+            z-index: 5;
+        }
+        
+        .permanent-rail {
+            position: absolute;
+            background-color: #f06292;
+            height: 5px;
+            transform-origin: left center;
+            z-index: 5;
+            cursor: move;
+        }
+        
+        .release-button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background-color: #ff5722;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        
+        .release-button:hover {
+            background-color: #e64a19;
+        }
+        
+        .release-button:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+        
+        .shop-button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background-color: #9c27b0;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .shop-button:hover {
+            background-color: #7b1fa2;
+        }
+        
+        .stats {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: #333;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 80%;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+        
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            background-color: #424242;
+            border-radius: 4px;
+        }
+        
+        .shop-item button {
+            padding: 8px 16px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .shop-item button:hover {
+            background-color: #388e3c;
+        }
+        
+        .shop-item button:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+        
+        .close-modal {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .wheel-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 30px auto;
+        }
+        
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            transition: transform 3s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            transform: rotate(0deg);
+            background-color: #444;
+        }
+        
+        .wheel-section {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            transform-origin: bottom right;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .wheel-pointer {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #f44336;
+            z-index: 2;
+        }
+        
+        .spin-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        
+        .trophy-container {
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .trophy {
+            font-size: 80px;
+            color: gold;
+            animation: trophy-glow 2s infinite alternate;
+        }
+        
+        @keyframes trophy-glow {
+            from { text-shadow: 0 0 10px gold, 0 0 20px gold; }
+            to { text-shadow: 0 0 20px gold, 0 0 30px gold, 0 0 40px gold; }
+        }
+        
+        .placement-mode {
+            background-color: #4caf50;
+            padding: 10px 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="game-container">
+            <div class="game-board" id="gameBoard"></div>
+        </div>
+        
+        <div class="ui-container">
+            <button class="release-button" id="releaseButton">Release Ball</button>
+            <button class="shop-button" id="shopButton">Shop</button>
+            
+            <div class="stats">
+                <h3>Stats</h3>
+                <p>Coins: <span id="coinCount">50</span></p>
+                <p>Balls: <span id="ballCount">5</span></p>
+            </div>
+            
+            <div class="placement-mode" id="placementMode">
+                <p>Click two pins to place rail</p>
+                <button id="cancelPlacement">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Shop Modal -->
+    <div class="modal" id="shopModal">
+        <div class="modal-content">
+            <h2>Shop</h2>
+            
+            <div class="shop-item">
+                <div>
+                    <h3>Buy 5 Balls</h3>
+                    <p>Get 5 more balls to drop</p>
+                </div>
+                <div>
+                    <p>25 coins</p>
+                    <button id="buyBalls">Buy</button>
+                </div>
+            </div>
+            
+            <div class="shop-item">
+                <div>
+                    <h3>Temporary Rail</h3>
+                    <p>Creates a rail between two pins (breaks after 5 hits)</p>
+                </div>
+                <div>
+                    <p>30 coins</p>
+                    <button id="buyTempRail">Buy</button>
+                </div>
+            </div>
+            
+            <div class="shop-item">
+                <div>
+                    <h3>Permanent Rail</h3>
+                    <p>Creates a movable permanent rail</p>
+                </div>
+                <div>
+                    <p>100 coins</p>
+                    <button id="buyPermRail">Buy</button>
+                </div>
+            </div>
+            
+            <div class="shop-item">
+                <div>
+                    <h3>Wheel of Fortune</h3>
+                    <p>Spin to win! Double or halve your coins</p>
+                </div>
+                <div>
+                    <p>50 coins</p>
+                    <button id="spinWheel">Spin</button>
+                </div>
+            </div>
+            
+            <div class="shop-item">
+                <div>
+                    <h3>Trophy</h3>
+                    <p>The ultimate goal! You win the game!</p>
+                </div>
+                <div>
+                    <p>1000 coins</p>
+                    <button id="buyTrophy">Buy</button>
+                </div>
+            </div>
+            
+            <button class="close-modal" id="closeShop">Close</button>
+        </div>
+    </div>
+    
+    <!-- Wheel Modal -->
+    <div class="modal" id="wheelModal">
+        <div class="modal-content">
+            <h2>Wheel of Fortune</h2>
+            
+            <div class="wheel-container">
+                <div class="wheel" id="wheel">
+                    <div class="wheel-section" style="transform: rotate(0deg); background-color: #f44336;">
+                        <span>2x</span>
+                    </div>
+                    <div class="wheel-section" style="transform: rotate(60deg); background-color: #9c27b0;">
+                        <span>Nothing</span>
+                    </div>
+                    <div class="wheel-section" style="transform: rotate(120deg); background-color: #2196f3;">
+                        <span>0.5x</span>
+                    </div>
+                    <div class="wheel-section" style="transform: rotate(180deg); background-color: #ff9800;">
+                        <span>Nothing</span>
+                    </div>
+                    <div class="wheel-section" style="transform: rotate(240deg); background-color: #4caf50;">
+                        <span>2x</span>
+                    </div>
+                    <div class="wheel-section" style="transform: rotate(300deg); background-color: #607d8b;">
+                        <span>0.5x</span>
+                    </div>
+                </div>
+                <div class="wheel-pointer"></div>
+            </div>
+            
+            <div id="wheelResult"></div>
+            
+            <button class="close-modal" id="closeWheel">Close</button>
+        </div>
+    </div>
+    
+    <!-- Trophy Modal -->
+    <div class="modal" id="trophyModal">
+        <div class="modal-content">
+            <h2>Congratulations!</h2>
+            <div class="trophy-container" style="display: block;">
+                <div class="trophy">🏆</div>
+                <h3>You Won The Game!</h3>
+                <p>You've successfully earned enough coins to buy the trophy!</p>
+            </div>
+            <button class="close-modal" id="closeTrophy">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        const gameState = {
+            coins: 50,
+            balls: 5,
+            activeBalls: [],
+            pins: [],
+            sections: [],
+            customRails: [],
+            permanentRails: [],
+            placingRail: false,
+            railType: null,
+            selectedPin: null,
+            gameWidth: 0,
+            gameHeight: 0,
+            gravity: 0.2,
+            friction: 0.99,
+            bounceFactor: 0.7
+        };
+        
+        // DOM elements
+        const gameBoard = document.getElementById('gameBoard');
+        const releaseButton = document.getElementById('releaseButton');
+        const shopButton = document.getElementById('shopButton');
+        const coinCountEl = document.getElementById('coinCount');
+        const ballCountEl = document.getElementById('ballCount');
+        const shopModal = document.getElementById('shopModal');
+        const closeShop = document.getElementById('closeShop');
+        const buyBalls = document.getElementById('buyBalls');
+        const buyTempRail = document.getElementById('buyTempRail');
+        const buyPermRail = document.getElementById('buyPermRail');
+        const buyTrophy = document.getElementById('buyTrophy');
+        const spinWheel = document.getElementById('spinWheel');
+        const wheelModal = document.getElementById('wheelModal');
+        const closeWheel = document.getElementById('closeWheel');
+        const wheel = document.getElementById('wheel');
+        const wheelResult = document.getElementById('wheelResult');
+        const trophyModal = document.getElementById('trophyModal');
+        const closeTrophy = document.getElementById('closeTrophy');
+        const placementMode = document.getElementById('placementMode');
+        const cancelPlacement = document.getElementById('cancelPlacement');
+        
+        // Initialize game
+        function initGame() {
+            // Set game dimensions
+            updateGameDimensions();
+            
+            // Create pins
+            createPins();
+            
+            // Create sections
+            createSections();
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Start game loop
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function updateGameDimensions() {
+            gameState.gameWidth = gameBoard.clientWidth;
+            gameState.gameHeight = gameBoard.clientHeight;
+        }
+        
+        function createPins() {
+            // Clear existing pins
+            gameState.pins = [];
+            
+            // Calculate grid dimensions based on game size
+            const rows = 8;
+            const cols = 11;
+            const pinSpacingX = gameState.gameWidth / (cols + 1);
+            const pinSpacingY = (gameState.gameHeight - 100) / (rows + 1);
+            
+            // Create pins in a grid pattern (offset every other row)
+            for (let row = 0; row < rows; row++) {
+                const offsetX = row % 2 === 0 ? 0 : pinSpacingX / 2;
+                const colsInRow = row % 2 === 0 ? cols : cols - 1;
+                
+                for (let col = 0; col < colsInRow; col++) {
+                    const x = pinSpacingX + col * pinSpacingX + offsetX;
+                    const y = pinSpacingY + row * pinSpacingY;
+                    
+                    // Create pin object
+                    const pin = {
+                        x: x,
+                        y: y,
+                        radius: 7,
+                        element: document.createElement('div')
+                    };
+                    
+                    // Style and position pin element
+                    pin.element.className = 'pin';
+                    pin.element.style.left = `${pin.x}px`;
+                    pin.element.style.top = `${pin.y}px`;
+                    
+                    // Add click event for rail placement
+                    pin.element.addEventListener('click', () => handlePinClick(pin));
+                    
+                    // Add pin to game board
+                    gameBoard.appendChild(pin.element);
+                    
+                    // Add pin to game state
+                    gameState.pins.push(pin);
+                }
+            }
+        }
+        
+        function createSections() {
+            // Clear existing sections
+            gameState.sections = [];
+            
+            // Define section values
+            const sectionValues = [10, 5, 20, 5, 50, 5, 20, 5, 10];
+            const sectionCount = sectionValues.length;
+            const sectionWidth = gameState.gameWidth / sectionCount;
+            
+            // Create each section
+            for (let i = 0; i < sectionCount; i++) {
+                const value = sectionValues[i];
+                
+                // Create section object
+                const section = {
+                    x: i * sectionWidth,
+                    y: gameState.gameHeight - 60,
+                    width: sectionWidth,
+                    height: 60,
+                    value: value,
+                    element: document.createElement('div')
+                };
+                
+                // Style and position section element
+                section.element.className = 'section';
+                section.element.style.left = `${section.x}px`;
+                section.element.style.bottom = '0';
+                section.element.style.width = `${section.width}px`;
+                section.element.style.height = `${section.height}px`;
+                section.element.style.backgroundColor = getRandomColor(value);
+                section.element.textContent = value;
+                
+                // Add section to game board
+                gameBoard.appendChild(section.element);
+                
+                // Add section to game state
+                gameState.sections.push(section);
+            }
+        }
+        
+        function getRandomColor(value) {
+            // Generate color based on value
+            if (value >= 50) return '#f44336'; // Red for high value
+            if (value >= 20) return '#ff9800'; // Orange for medium value
+            if (value >= 10) return '#4caf50'; // Green for low value
+            return '#2196f3'; // Blue for lowest value
+        }
+        
+        function setupEventListeners() {
+            // Release button
+            releaseButton.addEventListener('click', releaseBall);
+            
+            // Shop button
+            shopButton.addEventListener('click', openShop);
+            closeShop.addEventListener('click', closeModal);
+            
+            // Shop items
+            buyBalls.addEventListener('click', purchaseBalls);
+            buyTempRail.addEventListener('click', () => purchaseRail('temp'));
+            buyPermRail.addEventListener('click', () => purchaseRail('perm'));
+            buyTrophy.addEventListener('click', purchaseTrophy);
+            spinWheel.addEventListener('click', startWheelSpin);
+            
+            // Wheel modal
+            closeWheel.addEventListener('click', closeModal);
+            
+            // Trophy modal
+            closeTrophy.addEventListener('click', resetGame);
+            
+            // Rail placement
+            cancelPlacement.addEventListener('click', cancelRailPlacement);
+            
+            // Window resize
+            window.addEventListener('resize', handleResize);
+        }
+        
+        function handleResize() {
+            updateGameDimensions();
+            
+            // Clear and recreate game elements
+            while (gameBoard.firstChild) {
+                gameBoard.removeChild(gameBoard.firstChild);
+            }
+            
+            createPins();
+            createSections();
+            
+            // Recreate custom rails
+            gameState.customRails.forEach(rail => {
+                rail.element = createRailElement(rail.startPin, rail.endPin, rail.type);
+                gameBoard.appendChild(rail.element);
+            });
+            
+            // Recreate permanent rails
+            gameState.permanentRails.forEach(rail => {
+                rail.element = createRailElement(rail.startPin, rail.endPin, rail.type);
+                gameBoard.appendChild(rail.element);
+                
+                // Add drag handling for permanent rails
+                setupDragForRail(rail);
+            });
+        }
+        
+        function releaseBall() {
+            if (gameState.balls <= 0 || gameState.activeBalls.length >= 3) return;
+            
+            // Decrease ball count
+            gameState.balls--;
+            updateUI();
+            
+            // Create ball element
+            const ballElement = document.createElement('div');
+            ballElement.className = 'ball';
+            
+            // Randomize starting position slightly
+            const startX = gameState.gameWidth / 2 + (Math.random() * 40 - 20);
+            
+            // Create ball object
+            const ball = {
+                x: startX,
+                y: 20,
+                radius: 8,
+                vx: 0,
+                vy: 0,
+                element: ballElement
+            };
+            
+            // Position ball element
+            ball.element.style.left = `${ball.x}px`;
+            ball.element.style.top = `${ball.y}px`;
+            
+            // Add ball to game board
+            gameBoard.appendChild(ball.element);
+            
+            // Add ball to active balls
+            gameState.activeBalls.push(ball);
+            
+            // Disable button if no more balls
+            if (gameState.balls <= 0 || gameState.activeBalls.length >= 3) {
+                releaseButton.disabled = true;
+            }
+        }
+        
+        function updateBall(ball, deltaTime) {
+            // Apply gravity
+            ball.vy += gameState.gravity * deltaTime;
+            
+            // Apply friction
+            ball.vx *= gameState.friction;
+            ball.vy *= gameState.friction;
+            
+            // Update position
+            ball.x += ball.vx * deltaTime;
+            ball.y += ball.vy * deltaTime;
+            
+            // Check pin collisions
+            checkPinCollisions(ball);
+            
+            // Check rail collisions
+            checkRailCollisions(ball);
+            
+            // Check wall collisions
+            checkWallCollisions(ball);
+            
+            // Check section collisions
+            checkSectionCollisions(ball);
+            
+            // Update ball element position
+            ball.element.style.left = `${ball.x}px`;
+            ball.element.style.top = `${ball.y}px`;
+        }
+        
+        function checkPinCollisions(ball) {
+            gameState.pins.forEach(pin => {
+                const dx = ball.x - pin.x;
+                const dy = ball.y - pin.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const minDistance = ball.radius + pin.radius;
+                
+                if (distance < minDistance) {
+                    // Calculate collision response
+                    const angle = Math.atan2(dy, dx);
+                    const overlap = minDistance - distance;
+                    
+                    // Move ball out of collision
+                    ball.x += Math.cos(angle) * overlap;
+                    ball.y += Math.sin(angle) * overlap;
+                    
+                    // Bounce effect
+                    const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+                    const bounceAngle = Math.atan2(dy, dx);
+                    
+                    ball.vx = Math.cos(bounceAngle) * speed * gameState.bounceFactor;
+                    ball.vy = Math.sin(bounceAngle) * speed * gameState.bounceFactor;
+                    
+                    // Add some randomness to make it more interesting
+                    ball.vx += (Math.random() - 0.5) * 0.5;
+                    ball.vy += (Math.random() - 0.5) * 0.5;
+                }
+            });
+        }
+        
+        function checkRailCollisions(ball) {
+            // Check collisions with all rail types
+            const allRails = [...gameState.customRails, ...gameState.permanentRails];
+            
+            allRails.forEach(rail => {
+                // Get rail line segment
+                const startX = rail.startPin.x;
+                const startY = rail.startPin.y;
+                const endX = rail.endPin.x;
+                const endY = rail.endPin.y;
+                
+                // Calculate distance from ball to line segment
+                const distance = distanceToLineSegment(ball.x, ball.y, startX, startY, endX, endY);
+                
+                if (distance < ball.radius + 3) {
+                    // Calculate reflection angle
+                    const lineAngle = Math.atan2(endY - startY, endX - startX);
+                    const normalAngle = lineAngle + Math.PI / 2;
+                    
+                    // Reflect velocity
+                    const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+                    const incomingAngle = Math.atan2(ball.vy, ball.vx);
+                    const reflectionAngle = 2 * normalAngle - incomingAngle;
+                    
+                    ball.vx = Math.cos(reflectionAngle) * speed * gameState.bounceFactor;
+                    ball.vy = Math.sin(reflectionAngle) * speed * gameState.bounceFactor;
+                    
+                    // Move ball out of collision
+                    ball.x += Math.cos(normalAngle) * (ball.radius + 3 - distance);
+                    ball.y += Math.sin(normalAngle) * (ball.radius + 3 - distance);
+                    
+                    // Decrease durability for temporary rails
+                    if (rail.type === 'temp') {
+                        rail.durability--;
+                        
+                        // Update rail opacity based on durability
+                        rail.element.style.opacity = rail.durability / rail.maxDurability;
+                        
+                        // Remove rail if durability is depleted
+                        if (rail.durability <= 0) {
+                            gameBoard.removeChild(rail.element);
+                            gameState.customRails = gameState.customRails.filter(r => r !== rail);
+                        }
+                    }
+                }
+            });
+        }
+        
+        function distanceToLineSegment(px, py, x1, y1, x2, y2) {
+            const A = px - x1;
+            const B = py - y1;
+            const C = x2 - x1;
+            const D = y2 - y1;
+            
+            const dot = A * C + B * D;
+            const len_sq = C * C + D * D;
+            let param = -1;
+            
+            if (len_sq !== 0) param = dot / len_sq;
+            
+            let xx, yy;
+            
+            if (param < 0) {
+                xx = x1;
+                yy = y1;
+            } else if (param > 1) {
+                xx = x2;
+                yy = y2;
+            } else {
+                xx = x1 + param * C;
+                yy = y1 + param * D;
+            }
+            
+            const dx = px - xx;
+            const dy = py - yy;
+            
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        function checkWallCollisions(ball) {
+            // Left wall
+            if (ball.x < ball.radius) {
+                ball.x = ball.radius;
+                ball.vx = -ball.vx * gameState.bounceFactor;
+            }
+            
+            // Right wall
+            if (ball.x > gameState.gameWidth - ball.radius) {
+                ball.x = gameState.gameWidth - ball.radius;
+                ball.vx = -ball.vx * gameState.bounceFactor;
+            }
+            
+            // Top wall (usually not needed but added for completeness)
+            if (ball.y < ball.radius) {
+                ball.y = ball.radius;
+                ball.vy = -ball.vy * gameState.bounceFactor;
+            }
+        }
+        
+        function checkSectionCollisions(ball) {
+            // Check if ball is at bottom of screen
+            if (ball.y > gameState.gameHeight - ball.radius - 60) {
+                // Find which section the ball has entered
+                gameState.sections.forEach(section => {
+                    if (ball.x >= section.x && ball.x < section.x + section.width) {
+                        // Award coins based on section value
+                        gameState.coins += section.value;
+                        
+                        // Remove ball
+                        gameBoard.removeChild(ball.element);
+                        gameState.activeBalls = gameState.activeBalls.filter(b => b !== ball);
+                        
+                        // Enable release button if we have balls and fewer than 3 active balls
+                        if (gameState.balls > 0 && gameState.activeBalls.length < 3) {
+                            releaseButton.disabled = false;
+                        }
+                        
+                        // Update UI
+                        updateUI();
+                        
+                        // Flash section
+                        flashSection(section);
+                    }
+                });
+            }
+        }
+        
+        function flashSection(section) {
+            const originalColor = section.element.style.backgroundColor;
+            
+            // Flash white
+            section.element.style.backgroundColor = 'white';
+            
+            // Reset after a delay
+            setTimeout(() => {
+                section.element.style.backgroundColor = originalColor;
+            }, 100);
+        }
+        
+        function updateUI() {
+            coinCountEl.textContent = gameState.coins;
+            ballCountEl.textContent = gameState.balls;
+            
+            // Update shop button states
+            updateShopButtonStates();
+        }
+        
+        function updateShopButtonStates() {
+            buyBalls.disabled = gameState.coins < 25;
+            buyTempRail.disabled = gameState.coins < 30;
+            buyPermRail.disabled = gameState.coins < 100;
+            spinWheel.disabled = gameState.coins < 50;
+            buyTrophy.disabled = gameState.coins < 1000;
+        }
+        
+        function openShop() {
+            shopModal.style.display = 'flex';
+            updateShopButtonStates();
+        }
+        
+        function closeModal() {
+            shopModal.style.display = 'none';
+            wheelModal.style.display = 'none';
+            trophyModal.style.display = 'none';
+        }
+        
+        function purchaseBalls() {
+            if (gameState.coins >= 25) {
+                gameState.coins -= 25;
+                gameState.balls += 5;
+                updateUI();
+                
+                // Enable release button if it was disabled
+                releaseButton.disabled = false;
+            }
+        }
+        
+        function purchaseRail(type) {
+            const cost = type === 'temp' ? 30 : 100;
+            
+            if (gameState.coins >= cost) {
+                gameState.coins -= cost;
+                updateUI();
+                
+                // Set rail placement mode
+                gameState.placingRail = true;
+                gameState.railType = type;
+                gameState.selectedPin = null;
+                
+                // Show placement mode UI
+                placementMode.style.display = 'block';
+            }
+        }
+        
+        function handlePinClick(pin) {
+            if (!gameState.placingRail) return;
+            
+            if (gameState.selectedPin === null) {
+                // First pin selected
+                gameState.selectedPin = pin;
+                pin.element.style.backgroundColor = '#ff5722';
+            } else if (gameState.selectedPin !== pin) {
+                // Second pin selected, create rail
+                const startPin = gameState.selectedPin;
+                const endPin = pin;
+                
+                // Create rail based on type
+                if (gameState.railType === 'temp') {
+                    createTemporaryRail(startPin, endPin);
+                } else if (gameState.railType === 'perm') {
+                    createPermanentRail(startPin, endPin);
+                }
+                
+                // Reset selection
+                gameState.selectedPin.element.style.backgroundColor = '#aaa';
+                gameState.selectedPin = null;
+                gameState.placingRail = false;
+                gameState.railType = null;
+                
+                // Hide placement mode UI
+                placementMode.style.display = 'none';
+            }
+        }
+        
+        function cancelRailPlacement() {
+            if (gameState.selectedPin) {
+                gameState.selectedPin.element.style.backgroundColor = '#aaa';
+            }
+            
+            gameState.selectedPin = null;
+            gameState.placingRail = false;
+            gameState.railType = null;
+            
+            // Hide placement mode UI
+            placementMode.style.display = 'none';
+        }
+        
+        function createTemporaryRail(startPin, endPin) {
+            // Create rail element
+            const railElement = createRailElement(startPin, endPin, 'temp');
+            
+            // Add rail to game board
+            gameBoard.appendChild(railElement);
+            
+            // Create rail object
+            const rail = {
+                startPin: startPin,
+                endPin: endPin,
+                element: railElement,
+                type: 'temp',
+                durability: 5,
+                maxDurability: 5
+            };
+            
+            // Add rail to game state
+            gameState.customRails.push(rail);
+        }
+        
+        function createPermanentRail(startPin, endPin) {
+            // Create rail element
+            const railElement = createRailElement(startPin, endPin, 'perm');
+            
+            // Add rail to game board
+            gameBoard.appendChild(railElement);
+            
+            // Create rail object
+            const rail = {
+                startPin: startPin,
+                endPin: endPin,
+                element: railElement,
+                type: 'perm'
+            };
+            
+            // Add rail to game state
+            gameState.permanentRails.push(rail);
+            
+            // Add drag functionality to permanent rail
+            setupDragForRail(rail);
+        }
+        
+        function createRailElement(startPin, endPin, type) {
+            const railElement = document.createElement('div');
+            railElement.className = type === 'temp' ? 'custom-rail' : 'permanent-rail';
+            
+            // Calculate position and rotation
+            const dx = endPin.x - startPin.x;
+            const dy = endPin.y - startPin.y;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            
+            // Position and rotate rail
+            railElement.style.left = `${startPin.x}px`;
+            railElement.style.top = `${startPin.y}px`;
+            railElement.style.width = `${length}px`;
+            railElement.style.transform = `rotate(${angle}rad)`;
+            
+            return railElement;
+        }
+        
+        function setupDragForRail(rail) {
+            let isDragging = false;
+            let startPinIndex, endPinIndex;
+            
+            rail.element.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                
+                // Find closest pins to mouse position
+                const mouseX = e.clientX - gameBoard.getBoundingClientRect().left;
+                const mouseY = e.clientY - gameBoard.getBoundingClientRect().top;
+                
+                // Find two closest pins
+                let closestDist1 = Infinity;
+                let closestDist2 = Infinity;
+                let closestPin1 = null;
+                let closestPin2 = null;
+                
+                gameState.pins.forEach((pin, index) => {
+                    const dx = pin.x - mouseX;
+                    const dy = pin.y - mouseY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < closestDist1) {
+                        closestDist2 = closestDist1;
+                        closestPin2 = closestPin1;
+                        closestDist1 = dist;
+                        closestPin1 = pin;
+                        endPinIndex = startPinIndex;
+                        startPinIndex = index;
+                    } else if (dist < closestDist2) {
+                        closestDist2 = dist;
+                        closestPin2 = pin;
+                        endPinIndex = index;
+                    }
+                });
+                
+                // Update rail if we have two valid pins
+                if (closestPin1 && closestPin2) {
+                    // Update rail position
+                    rail.startPin = closestPin1;
+                    rail.endPin = closestPin2;
+                    
+                    // Update rail element
+                    const dx = rail.endPin.x - rail.startPin.x;
+                    const dy = rail.endPin.y - rail.startPin.y;
+                    const length = Math.sqrt(dx * dx + dy * dy);
+                    const angle = Math.atan2(dy, dx);
+                    
+                    rail.element.style.left = `${rail.startPin.x}px`;
+                    rail.element.style.top = `${rail.startPin.y}px`;
+                    rail.element.style.width = `${length}px`;
+                    rail.element.style.transform = `rotate(${angle}rad)`;
+                }
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        }
+        
+        function startWheelSpin() {
+            if (gameState.coins < 50) return;
+            
+            // Deduct cost
+            gameState.coins -= 50;
+            updateUI();
+            
+            // Close shop modal and open wheel modal
+            shopModal.style.display = 'none';
+            wheelModal.style.display = 'flex';
+            
+            // Reset wheel result
+            wheelResult.textContent = '';
+            
+            // Generate random rotation (at least 2 full spins + random position)
+            const spinDegrees = 720 + Math.floor(Math.random() * 360);
+            wheel.style.transform = `rotate(${spinDegrees}deg)`;
+            
+            // Determine result based on final position
+            setTimeout(() => {
+                const normalizedDegrees = spinDegrees % 360;
+                let result;
+                
+                // Determine which section the wheel landed on
+                if ((normalizedDegrees >= 0 && normalizedDegrees < 60) || (normalizedDegrees >= 240 && normalizedDegrees < 300)) {
+                    // 2x multiplier
+                    result = 'Double your coins!';
+                    gameState.coins *= 2;
+                } else if ((normalizedDegrees >= 120 && normalizedDegrees < 180) || (normalizedDegrees >= 300 && normalizedDegrees < 360)) {
+                    // 0.5x multiplier
+                    result = 'Half your coins!';
+                    gameState.coins = Math.floor(gameState.coins / 2);
+                } else {
+                    // Nothing
+                    result = 'No effect!';
+                }
+                
+                // Display result
+                wheelResult.textContent = result;
+                updateUI();
+            }, 3000);
+        }
+        
+        function purchaseTrophy() {
+            if (gameState.coins >= 1000) {
+                gameState.coins -= 1000;
+                updateUI();
+                
+                // Show trophy modal
+                trophyModal.style.display = 'flex';
+            }
+        }
+        
+        function resetGame() {
+            // Reset game state
+            gameState.coins = 50;
+            gameState.balls = 5;
+            gameState.activeBalls = [];
+            gameState.customRails = [];
+            gameState.permanentRails = [];
+            gameState.placingRail = false;
+            gameState.railType = null;
+            gameState.selectedPin = null;
+            
+            // Clear game board
+            while (gameBoard.firstChild) {
+                gameBoard.removeChild(gameBoard.firstChild);
+            }
+            
+            // Recreate game elements
+            createPins();
+            createSections();
+            
+            // Update UI
+            updateUI();
+            
+            // Close modals
+            closeModal();
+            
+            // Enable release button
+            releaseButton.disabled = false;
+        }
+        
+        // Game loop
+        let lastTime = 0;
+        function gameLoop(timestamp) {
+            // Calculate delta time
+            const deltaTime = lastTime ? (timestamp - lastTime) / 16 : 1;
+            lastTime = timestamp;
+            
+            // Update all active balls
+            gameState.activeBalls.forEach(ball => updateBall(ball, deltaTime));
+            
+            // Continue game loop
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Initialize game on load
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
